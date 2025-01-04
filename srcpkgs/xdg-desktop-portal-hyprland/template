@@ -9,6 +9,7 @@ hostmakedepends="
 	scdoc
 	cmake
 	git
+	qt6-base-devel
 "
 makedepends="
 	wayland-devel

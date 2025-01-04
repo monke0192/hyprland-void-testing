@@ -47,12 +47,6 @@ jobs:
           xbps-install -Syu
           xbps-install -y tar curl
 
-      - name: Install architecture support
-        run: |
-          xbps-install -Sy binfmt-support
-          ln -s /etc/sv/binfmt-support /var/service
-          xbps-install -Sy qemu-user
-          
       - name: Clone Void-Packages and prepare
         run: |
           mkdir ~/void-pkgs
@@ -78,83 +72,76 @@ jobs:
       # All declared individually for logging purposes
       # Common Deps
       - name: Build tomlplusplus
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg tomlplusplus)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg tomlplusplus)
 
       - name: Build sdbus-cpp
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg sdbus-cpp)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg sdbus-cpp)
 
       # Normal Build
       - name: Build hyprutils
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprutils)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprutils)
 
       - name: Build hyprlang
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprlang)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprlang)
 
       - name: Build hyprcursor
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprcursor)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprcursor)
 
       - name: Build hyprwayland-scanner
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprwayland-scanner)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprwayland-scanner)
 
       - name: Build aquamarine
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg aquamarine)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg aquamarine)
 
       - name: Build hyprland
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprland)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprland)
 
       - name: Build hyprland-protocols
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprland-protocols)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprland-protocols)
 
       - name: Build xdg-desktop-portal-hyprland
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg xdg-desktop-portal-hyprland)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg xdg-desktop-portal-hyprland)
 
       - name: Build hypridle
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hypridle)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hypridle)
 
       - name: Build hyprlock
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprlock)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprlock)
 
       - name: Build hyprpaper
-        run: (/hostrepo/xbps-src -A aarch64 -a aarch64 -j$(nproc) -s -H ~/hostdir pkg hyprpaper)
+        run: (/hostrepo/xbps-src -a aarch64 -s -H ~/hostdir pkg hyprpaper)
 
       # Sometimes xbps-src builds a bunch of other junk I don't want to be liable for distributing
       - name: Copy relevant packages to new directory to be packaged
         run: |
-          mkdir ~/packages
-          cp ~/hostdir/binpkgs/aquamarine*.xbps ~/packages
-          cp ~/hostdir/binpkgs/hypr*.xbps ~/packages
-          cp ~/hostdir/binpkgs/xdg-desktop-portal-hyprland*.xbps ~/packages
-          cp ~/hostdir/binpkgs/sdbus-cpp*.xbps ~/packages
-          cp ~/hostdir/binpkgs/tomlplusplus*.xbps ~/packages
-          cd ~/packages
-          xbps-rindex -a *
+          ls -lah ~/hostdir/binpkgs/
 
       # Retrieve the signing key from the separate private repository
-      - name: Retrieve private key
-        run: |
-          cd ~
-          curl -H 'Authorization: token ${{ secrets.PEM_PAT }}' \
-            -H 'Accept: application/vnd.github.v3.raw' \
-            -O -L https://api.github.com/repos/${{ env.REPO_OWNER }}/hyprland-void-private-pem/contents/private.pem
+      # - name: Retrieve private key
+      #   run: |
+      #     cd ~
+      #     curl -H 'Authorization: token ${{ secrets.PEM_PAT }}' \
+      #       -H 'Accept: application/vnd.github.v3.raw' \
+      #       -O -L https://api.github.com/repos/${{ env.REPO_OWNER }}/hyprland-void-private-pem/contents/private.pem
 
-      # We need to sign the packages with our private key so that they will be accepted by xbps remotely
-      # See: https://docs.voidlinux.org/xbps/repositories/signing.html
-      - name: Sign repository
-        run: |
-          export XBPS_PASSPHRASE=${{ secrets.PRIVATE_PEM_PASSPHRASE }}
-          xbps-rindex --privkey ~/private.pem --sign --signedby "${{ env.REPO_NAME }}-github-action" ~/packages
-          xbps-rindex --privkey ~/private.pem --sign-pkg ~/packages/*.xbps
+      # # We need to sign the packages with our private key so that they will be accepted by xbps remotely
+      # # See: https://docs.voidlinux.org/xbps/repositories/signing.html
+      # - name: Sign repository
+      #   run: |
+      #     export XBPS_PASSPHRASE=${{ secrets.PRIVATE_PEM_PASSPHRASE }}
+      #     xbps-rindex --privkey ~/private.pem --sign --signedby "${{ env.REPO_NAME }}-github-action" ~/packages
+      #     xbps-rindex --privkey ~/private.pem --sign-pkg ~/packages/*.xbps
 
-      # We'll blow the size of the repository up very quickly if we do not delete old iterations of the repository
-      - name: Delete old repository and recreate with new packages
-        run: |
-          cd ~/void-pkgs/${{ env.REPO_NAME }}
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git push https://${{ env.REPO_OWNER }}:${{ secrets.ACCESS_GIT }}@github.com/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}.git -d repository-aarch64-glibc
-          git switch --orphan repository-aarch64-glibc
-          cp ~/packages/* ./
-          git add .
-          git commit -m "Upload latest packages to repository"
-          git push https://${{ env.REPO_OWNER }}:${{ secrets.ACCESS_GIT }}@github.com/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}.git repository-aarch64-glibc
+      # # We'll blow the size of the repository up very quickly if we do not delete old iterations of the repository
+      # - name: Delete old repository and recreate with new packages
+      #   run: |
+      #     cd ~/void-pkgs/${{ env.REPO_NAME }}
+      #     git config user.name "github-actions[bot]"
+      #     git config user.email "github-actions[bot]@users.noreply.github.com"
+      #     git push https://${{ env.REPO_OWNER }}:${{ secrets.ACCESS_GIT }}@github.com/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}.git -d repository-aarch64-glibc
+      #     git switch --orphan repository-aarch64-glibc
+      #     cp ~/packages/* ./
+      #     git add .
+      #     git commit -m "Upload latest packages to repository"
+      #     git push https://${{ env.REPO_OWNER }}:${{ secrets.ACCESS_GIT }}@github.com/${{ env.REPO_OWNER }}/${{ env.REPO_NAME }}.git repository-aarch64-glibc
 
